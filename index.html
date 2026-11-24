@@ -354,6 +354,12 @@
         <form id="visit-form" class="form-content" autocomplete="off" novalidate>
           <div class="form-grid">
             <div class="full">
+              <label for="employee">اسم الموظف</label>
+              <input id="employee" name="employee" type="text" dir="auto" placeholder="اسم الموظف الذي قام بالزيارة" aria-describedby="employee-error" required>
+              <p class="error" id="employee-error" hidden>أدخل اسم الموظف.</p>
+            </div>
+
+            <div class="full">
               <label for="company">اسم الشركة</label>
               <input id="company" name="company" type="text" dir="auto" placeholder="أدخل اسم الشركة" aria-describedby="company-error" required>
               <p class="error" id="company-error" hidden>أدخل اسم الشركة.</p>
@@ -460,6 +466,10 @@
         </div>
       </div>
       <dl class="details">
+        <div class="full">
+          <dt>اسم الموظف</dt>
+          <dd class="value" data-field="employee" dir="auto"></dd>
+        </div>
         <div>
           <dt>اسم المسؤول</dt>
           <dd class="value" data-field="manager" dir="auto"></dd>
@@ -607,6 +617,7 @@ const createVisitPdf = (() => {
       }
     };
 
+    addFields([['اسم الموظف', visit.employee || '']]);
     addFields([['اسم المسؤول', visit.manager], ['رقم الجوال', visit.phone, 'ltr']]);
     addFields([
       ['وقت بداية الزيارة', visit.start, 'ltr'],
@@ -758,6 +769,14 @@ const createVisitPdf = (() => {
     let editing = null;
     let exporting = false;
 
+    const employeeKey = 'zover-visits-employee';
+    function savedEmployee() {
+      try { return localStorage.getItem(employeeKey) || ''; } catch { return ''; }
+    }
+    function rememberEmployee(name) {
+      try { localStorage.setItem(employeeKey, name); } catch {}
+    }
+
     function readValues() {
       return Object.fromEntries(fields.map(({ input }) => [input.id, input.value.trim()]));
     }
@@ -790,7 +809,7 @@ const createVisitPdf = (() => {
     function syncDraft() {
       const values = readValues();
       overnightNote.hidden = !getTiming(values).overnight;
-      pendingNote.hidden = !Object.values(values).some(Boolean);
+      pendingNote.hidden = !Object.entries(values).some(([key, value]) => key !== 'employee' && value);
       pendingNote.textContent = editing
         ? 'يظهر التعديل في التقرير بعد حفظه.'
         : 'الزيارة الحالية بانتظار الإضافة.';
@@ -806,7 +825,7 @@ const createVisitPdf = (() => {
         setError(field, false);
       }
       syncDraft();
-      fields[0].input.focus();
+      (fields.find(({ input }) => !input.value) ?? fields[0]).input.focus();
     }
 
     function renderReport() {
@@ -886,7 +905,8 @@ const createVisitPdf = (() => {
         formStatus.textContent = 'حُفظ التعديل.';
       } else {
         visits.push(visit);
-        setForm();
+        rememberEmployee(values.employee);
+        setForm({ employee: values.employee });
         formStatus.textContent = 'أُضيفت الزيارة. يمكنك إدخال الزيارة التالية.';
       }
       renderReport();
@@ -898,7 +918,7 @@ const createVisitPdf = (() => {
         restoreDraft();
         renderReport();
       } else {
-        setForm();
+        setForm({ employee: readValues().employee });
       }
     });
 
@@ -989,6 +1009,7 @@ const createVisitPdf = (() => {
       }
     });
 
+    document.getElementById('employee').value = savedEmployee();
     syncDraft();
     renderReport();
 
