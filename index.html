@@ -272,6 +272,7 @@
     .result .value { white-space: pre-wrap; font-weight: 400; }
     .export-actions { margin-block-end: 14px; }
     .file-actions { flex-basis: 100%; }
+    .new-report.confirm { color: var(--danger); background: #fbefef; }
     .inapp-note { margin-block-end: 12px; padding: 10px 12px; border: 1px solid #e9c46a; border-radius: 8px; background: #fff8e6; color: #5b4300; font-size: 13px; }
     .inapp-note strong { display: block; margin-block-end: 2px; }
     a.button { text-decoration: none; }
@@ -355,37 +356,37 @@
           <div class="form-grid">
             <div class="full">
               <label for="employee">اسم الموظف</label>
-              <input id="employee" name="employee" type="text" dir="auto" placeholder="اسم الموظف الذي قام بالزيارة" aria-describedby="employee-error" required>
+              <input id="employee" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore type="text" dir="auto" placeholder="اسم الموظف الذي قام بالزيارة" aria-describedby="employee-error" required>
               <p class="error" id="employee-error" hidden>أدخل اسم الموظف.</p>
             </div>
 
             <div class="full">
               <label for="company">اسم الشركة</label>
-              <input id="company" name="company" type="text" dir="auto" placeholder="أدخل اسم الشركة" aria-describedby="company-error" required>
+              <input id="company" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore type="text" dir="auto" placeholder="أدخل اسم الشركة" aria-describedby="company-error" required>
               <p class="error" id="company-error" hidden>أدخل اسم الشركة.</p>
             </div>
 
             <div class="contact">
               <label for="manager">اسم المسؤول</label>
-              <input id="manager" name="manager" type="text" dir="auto" placeholder="أدخل اسم المسؤول" aria-describedby="manager-error" required>
+              <input id="manager" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore type="text" dir="auto" placeholder="أدخل اسم المسؤول" aria-describedby="manager-error" required>
               <p class="error" id="manager-error" hidden>أدخل اسم المسؤول.</p>
             </div>
 
             <div class="contact">
               <label for="phone">رقم الجوال</label>
-              <input id="phone" name="phone" type="tel" dir="ltr" placeholder="أدخل رقم الجوال" aria-describedby="phone-error" required>
+              <input id="phone" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore type="tel" dir="ltr" placeholder="أدخل رقم الجوال" aria-describedby="phone-error" required>
               <p class="error" id="phone-error" hidden>أدخل رقم الجوال.</p>
             </div>
 
             <div>
               <label for="start">وقت بداية الزيارة</label>
-              <input id="start" name="start" type="time" dir="ltr" aria-describedby="start-error" required>
+              <input id="start" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore type="time" dir="ltr" aria-describedby="start-error" required>
               <p class="error" id="start-error" hidden>أدخل وقت البداية.</p>
             </div>
 
             <div>
               <label for="end">وقت انتهاء الزيارة</label>
-              <input id="end" name="end" type="time" dir="ltr" aria-describedby="end-error overnight-note" required>
+              <input id="end" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore type="time" dir="ltr" aria-describedby="end-error overnight-note" required>
               <p class="error" id="end-error" hidden>أدخل وقت الانتهاء.</p>
             </div>
 
@@ -395,7 +396,7 @@
 
             <div class="full">
               <label for="result">نتيجة الزيارة</label>
-              <textarea id="result" name="result" dir="auto" rows="3" placeholder="اكتب نتيجة الزيارة وأهم الملاحظات" aria-describedby="result-error" required></textarea>
+              <textarea id="result" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore dir="auto" rows="3" placeholder="اكتب نتيجة الزيارة وأهم الملاحظات" aria-describedby="result-error" required></textarea>
               <p class="error" id="result-error" hidden>أدخل نتيجة الزيارة.</p>
             </div>
           </div>
@@ -428,6 +429,7 @@
               <span class="icon icon-download" aria-hidden="true"></span>
               تنزيل PDF
             </button>
+            <button class="button quiet new-report" id="new-report" type="button" hidden>تقرير جديد</button>
             <p class="export-feedback" id="pdf-feedback" role="status"></p>
             <div class="actions file-actions" id="file-actions" hidden>
               <button class="button secondary" type="button" id="share-report" hidden>حفظ / مشاركة الملف</button>
@@ -453,7 +455,7 @@
       </section>
     </div>
 
-    <p class="footer-note">البيانات مؤقتة أثناء فتح الصفحة. احفظ التقرير قبل إغلاقها.</p>
+    <p class="footer-note">لا يُحفظ أي شيء على الرابط أو على جهازك. تُمسح كل البيانات عند إغلاق الصفحة، فنزّل التقرير قبل إغلاقها.</p>
   </main>
 
   <template id="visit-template">
@@ -769,7 +771,45 @@ const createVisitPdf = (() => {
     let editing = null;
     let exporting = false;
 
+    // Clean up a name left by an earlier version; nothing is ever written.
     try { localStorage.removeItem('zover-visits-employee'); } catch {}
+    const newReportButton = document.getElementById('new-report');
+    let confirmTimer = null;
+
+    function startFresh() {
+      visits.length = 0;
+      editing = null;
+      exporting = false;
+      readyFile = null;
+      if (readyUrl) URL.revokeObjectURL(readyUrl);
+      readyUrl = null;
+      form.reset();
+      formStatus.textContent = '';
+      reportFeedback.textContent = '';
+      setForm({}, false);
+      renderReport();
+      window.scrollTo(0, 0);
+    }
+
+    function resetConfirm() {
+      clearTimeout(confirmTimer);
+      newReportButton.classList.remove('confirm');
+      newReportButton.textContent = 'تقرير جديد';
+    }
+
+    newReportButton.addEventListener('click', () => {
+      if (!newReportButton.classList.contains('confirm')) {
+        newReportButton.classList.add('confirm');
+        newReportButton.textContent = 'اضغط مرة أخرى لمسح كل الزيارات';
+        confirmTimer = setTimeout(resetConfirm, 4000);
+        return;
+      }
+      resetConfirm();
+      startFresh();
+    });
+
+    // Browsers may restore typed values on reload or Back; always open empty.
+    window.addEventListener('pageshow', () => startFresh());
 
     function readValues() {
       return Object.fromEntries(fields.map(({ input }) => [input.id, input.value.trim()]));
@@ -809,7 +849,7 @@ const createVisitPdf = (() => {
         : 'الزيارة الحالية بانتظار الإضافة.';
     }
 
-    function setForm(values = {}) {
+    function setForm(values = {}, focus = true) {
       formTitle.textContent = editing ? 'تعديل الزيارة' : 'بيانات الزيارة';
       submitLabel.textContent = editing ? 'حفظ التعديل' : 'إضافة الزيارة';
       clearButton.textContent = editing ? 'إلغاء التعديل' : 'مسح الحقول';
@@ -819,7 +859,7 @@ const createVisitPdf = (() => {
         setError(field, false);
       }
       syncDraft();
-      (fields.find(({ input }) => !input.value) ?? fields[0]).input.focus();
+      if (focus) (fields.find(({ input }) => !input.value) ?? fields[0]).input.focus();
     }
 
     function renderReport() {
@@ -833,6 +873,7 @@ const createVisitPdf = (() => {
         fileActions.hidden = true;
       }
       jumpLink.hidden = !hasVisits;
+      newReportButton.hidden = !hasVisits;
       visitList.replaceChildren(...visits.map(renderVisit));
     }
 
