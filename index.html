@@ -769,13 +769,7 @@ const createVisitPdf = (() => {
     let editing = null;
     let exporting = false;
 
-    const employeeKey = 'zover-visits-employee';
-    function savedEmployee() {
-      try { return localStorage.getItem(employeeKey) || ''; } catch { return ''; }
-    }
-    function rememberEmployee(name) {
-      try { localStorage.setItem(employeeKey, name); } catch {}
-    }
+    try { localStorage.removeItem('zover-visits-employee'); } catch {}
 
     function readValues() {
       return Object.fromEntries(fields.map(({ input }) => [input.id, input.value.trim()]));
@@ -905,7 +899,6 @@ const createVisitPdf = (() => {
         formStatus.textContent = 'حُفظ التعديل.';
       } else {
         visits.push(visit);
-        rememberEmployee(values.employee);
         setForm({ employee: values.employee });
         formStatus.textContent = 'أُضيفت الزيارة. يمكنك إدخال الزيارة التالية.';
       }
@@ -1009,7 +1002,6 @@ const createVisitPdf = (() => {
       }
     });
 
-    document.getElementById('employee').value = savedEmployee();
     syncDraft();
     renderReport();
 
